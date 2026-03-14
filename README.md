@@ -12,6 +12,9 @@
 ## 2. Documentación
 
 ### 2.1 Descripción del laboratorio
+En este laboratorio realizamos tres diferentes montajes para probar el oscilador interno, el oscilador externo y circuito RC en el PIC18F45K22 para obtener una señal con una frecuencia aproximada de 500 Hz, primero se programó el oscilador interno del microcontrolador y se verificó su funcionamiento midiendo la señal generada en un osciloscopio, despues se monto un oscilador con un cristal para que funcionara con oscilación externa, realizando nuevamente la medición de la frecuencia obtenida y finalmente se montó un circuito RC como otra forma de oscilación externa, medimos hasta obtener igualmente los 500Hz.
+
+En cada una de las configuraciones se realizaron mediciones con el fin de comprobar que la señal generada se aproximara a los 500 Hz requeridos en la guia de laboratorio, permitiendo así comparar el comportamiento de los diferentes métodos de generación de reloj utilizados en el microcontrolador.
 
 ### 2.2 Explicación del código implementado
 
@@ -54,41 +57,41 @@ A partir de los siguientes diagramas se observo el comportamiento de cada uno de
 
 * Simulación Oscilador Interno
 
-![alt text](LedP.png)
+![alt text](LedP.png) Figura 1. Oscilador Interno
 
 * Simulación Cristal 16MHz
 
-![alt text](CristalP.png)
+![alt text](CristalP.png) Figura 2. Cristal 16MHz
 
 * Simulación Circuito RC
 
-![alt text](RCp.png)
+![alt text](RCp.png) Figura 3. Circuito RC
 
 ## 2.5 Formas de onda
 
 ### INTOSC (interno) 
-![alt text](Interno.png)
+![alt text](Interno.png) Figura 4. Oscilador interno
 
 En esta imagen se observa la señal que nos genera el oscilador interno de el PIC18F45K22, siempre y cuando tenemos el modo 1 dentro de el codigo el cual nos activa un señal de 900000UL ya que es el que hace que funcione el oscilador interno. 
 ### HS
-![alt text](Cristal.png)
+![alt text](Cristal.png) Figura 5. Oscilador externo cristal
 
 En esta imagen se logra observar la señal que se genera gracias a la conexión entre dos condensadores y el cristal de 16MHz.
 ## RC
-![alt text](RC.png)
+![alt text](RC.png) Figura 6. RC
 
 En el tercer modo se observa la señal de 500Hz que se logra generar a traves de el circuito RC.
 ## 3. Evidencias de implementación
 
-![alt text](Ledreal.png)
+![alt text](Ledreal.png) Figura 7. Montaje Oscilador interno
 
 En esta imagen se evidencia el diseño de el circuito en la realidad, en donde se realiza la oncexión a traves de el PICKIT4 junto a el PIC18F45K22 para que de esta forma se aliemnte y pueda compilar el codigo establecido. En el cual la señal que se obtiene dentro de el pic es llevada a el pin 15 (RC0) para así lograr observar lo que establece dentro del programa,
 
-![alt text](CristalReal.png)
+![alt text](CristalReal.png) Figura 8. Montaje Oscilador externo cristal
 
 En esta imagen se evidencia el diseño de el circuito en la realidad, en donde se realiza la oncexión a traves de el PICKIT4 junto a el PIC18F45K22 en donde el oscilador de cristal junto a los 2 condensadores de 22pf en donde se envia una señal a la entrada (pin13) y la otra a la salida (pin14) para que de esta forma se genere una unica señal de salida y no se afecte entre el cristal y el oscilador interno de el PIC.
 
-![alt text](RCReal.png)
+![alt text](RCReal.png) Figura 9. Montaje circuito RC
 
 Para el circuito RC lo que se realiza es por medio de la formula de la frecuencia calcular los valores de los componentes que se necesitan, en nuestro caso se asumio un condensador de 22pf y se calculo la resistencia de la siguiente forma.
 
