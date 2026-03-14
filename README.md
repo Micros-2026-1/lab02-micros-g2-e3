@@ -18,6 +18,121 @@ En cada una de las configuraciones se realizaron mediciones con el fin de compro
 
 ### 2.2 Explicación del código implementado
 
+### - Librerias
+
+    #include <xc.h>
+
+    #include <stdint.h>
+
+En esta parte del código tenemos las librerías necesarias para trabajar con el microcontrolador.
+
+- xc.h: permite acceder a los registros y configuraciones del microcontrolador.
+
+- stdint.h: define tipos de datos enteros con tamaño específico, como uint16_t.
+
+### - Configuración Modos
+
+    // 1 = INTOSC interno
+    // 2 = Cristal externo HS
+    // 3 = RC externo
+    #define MODE 1  
+
+    #if MODE == 1
+        #pragma config FOSC = INTIO67   // Oscilador    interno
+        #define USE_PLL 0
+    #elif MODE == 2
+        #pragma config FOSC = HSHP     // Cristal HS
+        #define USE_PLL 0
+    #elif MODE == 3
+        #pragma config FOSC = RC       // RC externo
+        #define USE_PLL 0
+    #else
+        #error "Modo de oscilador inválido"
+        #endif
+
+Este bloque del programa permite seleccionar el tipo de oscilador que utilizará el microcontrolador PIC18F5022. Para ello se define una constante llamada MODE, la cual determina que oscilador estaremos usando.
+
+El valor de MODE puede ser cualquiera de las tres configuraciones que tenemos:
+
+MODE = 1: se utiliza el oscilador interno del microcontrolador.
+
+MODE = 2: se utiliza un cristal externo.
+
+MODE = 3: se utiliza un oscilador RC externo formado por una resistencia y un capacitor.
+
+Mediante bloques como #if, #elif y #else el programa selecciona automáticamente la configuración correspondiente. En cada caso se utiliza #pragma config FOSC para establecer el tipo de oscilador que controlará el oscilador del sistema.
+
+También se define la variable USE_PLL, la cual permite habilitar o deshabilitar el PLL para multiplicar la frecuencia del oscilador si se requiere mayor velocidad de operación.
+
+Y por ultimo si se pone un valor inválido para MODE, el compilador generará un error con la parte del bloque #error, evitando que el programa se compile con una configuración incorrecta.
+
+### - Configuración de frecuencia
+
+    #if MODE == 1 || MODE == 2
+        #if USE_PLL
+            #define _XTAL_FREQ 64000000UL // 16 MHz * 4
+        #else
+            #define _XTAL_FREQ 16000000UL
+        #endif
+    #else
+        #define _XTAL_FREQ 16000000UL // Ajustar según resistencia + condensador
+    #endif
+
+Este bloque define la frecuencia con la que va a operar el microcontrolador, la cual es almacenada en la constante _XTAL_FREQ, esta constante es utilizada por el programa para calcular correctamente los retardos generados mediante funciones como __delay_ms().
+
+La frecuencia se establece dependiendo del modo de oscilador seleccionado, cuando se utiliza el oscilador interno o un cristal externo, la frecuencia base se define como 16 MHz en el caso del oscilador interno en cambio para el cristal la frecuencia que utilizamos fue de 800000 Hz y en el caso del RC la frecuencia a utilizar fue calculada mediante la formula de frecuencia en un circuito RC.
+
+### - Funciones
+
+    void delay_ms(uint16_t ms) {
+        while(ms--) {
+            __delay_ms(1);
+        }
+    }
+
+    void init_pins(void) {
+        // RC0 salida blinker
+        TRISCbits.TRISC0 = 0;
+        LATCbits.LATC0 = 0;
+
+    // RA6 salida CLKO solo si modo lo permite
+        if(MODE == 1 || (MODE == 2 && USE_PLL)) {
+            TRISAbits.TRISA6 = 0;
+            LATAbits.LATA6 = 0;
+        }
+    }
+
+    void init_oscillator(void) {
+    #if USE_PLL
+        OSCCONbits.SPLLEN = 1;  // habilita PLL
+    #endif
+    }
+
+Este bloque del programa define varias funciones que permiten organizar y facilitar la configuración del microcontrolador, la función delay_ms(uint16_t ms) se encarga de generar retardos en milisegundos mediante un ciclo while que ejecuta repetidamente la instrucción __delay_ms(1) hasta completar el tiempo indicado, esto permite controlar los tiempos de espera dentro del programa. 
+
+La función init_pins() configura los pines que serán utilizados durante la ejecución del códigp, en este caso, el pin RC0 se establece como salida digital mediante el registro TRISC, iniciando en nivel bajo usando LATC, este pin es el que se utiliza para generar la señal que posteriormente se mide con el osciloscopio.
+
+Finalmente la función init_oscillator() permite habilitar el PLL si está activado en la configuración del programa, utilizando el registro OSCCONbits.SPLLEN, el PLL permite multiplicar la frecuencia del oscilador y aumentar la velocidad de operación del microcontrolador. En conjunto estas funciones preparan el sistema antes de que se ejecute el programa principal.
+
+### - Programa Principal
+
+    void main(void) {
+        init_pins();
+        init_oscillator();
+
+    while(1) {
+        // RC0 toggle ≈ 500 Hz
+        LATCbits.LATC0 = 1;
+        delay_ms(1);
+        LATCbits.LATC0 = 0;
+        delay_ms(1);
+        }
+    }
+
+Este bloque corresponde al programa principal que se ejecuta en el microcontrolador PIC18F5022. Inicialmente se llaman a las funciones init_pins() e init_oscillator(), las cuales se encargan de configurar los pines de entrada y salida y establecer la configuración del sistema de oscilación. Posteriormente se ejecuta un ciclo infinito while(1), el cual permite que el programa se repita continuamente mientras el microcontrolador esté encendido. 
+    
+Dentro de este ciclo se genera una señal digital en el pin RC0, colocando primero el pin en nivel alto (LATCbits.LATC0 = 1), esperando 1 ms mediante la función delay_ms(1), y luego colocando el pin en nivel bajo (LATCbits.LATC0 = 0) seguido de otro retardo de 1 ms. Este proceso se repite constantemente, produciendo una señal cuadrada con un período aproximado de 2 ms, lo que corresponde a una frecuencia cercana a 500 Hz, la cual puede ser observada y verificada utilizando el osciloscopio durante el laboratorio.
+
 ### 2.3 Análisis y comparación
 
 A continuación se presentan diferentes tablas las cuales nos dan a entender cual fue el comportamiento de cada una de las señales generadas y comparando su porcentaje de error en cuanto a lo teorico a lo obtenido. Al igual realizando unas pequeñas variaciones como la temperatura a ver como puede influir dentro de las oscilaciones que se generan.
@@ -130,11 +245,79 @@ Este comportamiento ocurre porque la frecuencia del oscilador interno del microc
 
 * ¿Cuál es más preciso en cuanto a frecuencia teórica vs. medida?
 
+El modo de oscilación más preciso fue el oscilador con cristal externo (HS), en las mediciones realizadas, este modo presentó el menor porcentaje de error tanto en condiciones normales como cuando se aplicó calor. En frío el error fue aproximadamente 0.24 %, y con temperatura elevada fue cercano a 0.2 %, lo cual indica que la frecuencia medida se mantiene muy cercana a la frecuencia teórica de 500 Hz.
+
 
 * Explique cómo usar RC0 para estimar la frecuencia del oscilador cuando RA6 no está disponible.
 
+Cuando el pin RA6 (CLKO) no está disponible para medir directamente la frecuencia del reloj del sistema, es posible estimarla utilizando una señal generada por software en otro pin, como RC0.
+
+En el programa se genera una señal cuadrada en RC0 alternando el pin entre nivel alto y bajo con un retardo de 1 ms entre cada cambio. Esto produce un período total de aproximadamente 2 ms, lo que corresponde a una frecuencia cercana a 500 Hz.
+
 * Si se quisiera duplicar la frecuencia del PIC usando PLL, ¿en qué modos se podría aplicar?
+
+Se puede usar en la configuración de el oscilador interno y el con el oscilador del cristal en estos casos el PLL puede multiplicar la frecuencia base (por ejemplo 16 MHz) para obtener frecuencias mayores, sin embargo el modo RC externo normalmente no se utiliza con PLL, ya que la frecuencia generada por este tipo de oscilador no es lo suficientemente estable para un correcto funcionamiento del multiplicador de frecuencia.
 
 * Enliste ventajas y desventajas de cada modo.
 
+### Oscilador interno 
+
+### Ventajas
+
+- No requiere componentes externos.
+
+- Reduce costo y tamaño del circuito.
+
+- Fácil configuración.
+
+### Desventajas
+
+- Menor precisión en la frecuencia.
+
+- Mayor variación con temperatura y voltaje.
+
+### Oscilador del cristal
+
+### Ventajas
+
+- Alta precisión en la frecuencia.
+
+- Muy buena estabilidad frente a cambios de temperatura.
+
+- Ideal para aplicaciones que requieren sincronización exacta.
+
+### Desventajas
+
+- Requiere componentes externos (cristal y capacitores).
+
+- Aumenta el costo y el espacio en el circuito.
+
+### Oscilador RC
+
+### Ventajas
+
+- Implementación simple con pocos componentes.
+
+- Bajo costo.
+
+### Desventajas
+
+- Baja precisión.
+
+- Alta sensibilidad a temperatura y tolerancias de componentes.
+
+- Frecuencia menos estable que las otras opciones.
+
+## Conclusiones 
+
+- En este laboratorio se analizaron diferentes modos de oscilación del microcontrolador PIC18F45K22 con el objetivo de generar y medir una señal cercana a 500 Hz utilizando un osciloscopio, a partir de las mediciones realizadas se pudo observar que el oscilador con cristal externo presentó la mayor precisión y estabilidad, ya que el error entre la frecuencia teórica y la medida fue el más bajo tanto en condiciones normales como cuando se aplicó calor.
+
+- El oscilador interno mostró un desempeño aceptable en condiciones normales, pero presentó una variación mayor cuando la temperatura aumentó, lo que evidencia que este tipo de oscilador es más sensible a factores externos, el oscilador RC externo presentó la mayor variación en la frecuencia medida, debido a que su funcionamiento depende directamente de los valores de la resistencia y el capacitor, así como de las condiciones ambientales.
+
+- El laboratorio permitió comprender las diferencias entre los distintos métodos de generación de reloj en un microcontrolador, así como la importancia de seleccionar el tipo de oscilador adecuado dependiendo de la precisión y estabilidad requeridas en una aplicación electrónica.
+
 ## 5. Referencias
+
+- Microchip Technology. (2023). PIC18F4520 Family Reference Manual. Microchip Technology Inc. https://www.microchip.com
+
+- Texas Instruments. (2020). Introduction to Oscillators and Crystal Circuits. Texas Instruments. https://www.ti.com
